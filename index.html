@@ -10,22 +10,29 @@
         body { overflow: hidden; font-family: 'Lato', sans-serif; background: #1a1a2e; }
         #canvas { display: block; cursor: crosshair; }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-        .title-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; animation: fadeIn 2s ease-out; }
+        .title-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; animation: fadeIn 2s ease-out; z-index: 5; }
         .title { font-family: 'Playfair Display', serif; font-size: clamp(2.5rem, 8vw, 5rem); color: #fff; text-shadow: 0 4px 30px rgba(0,0,0,0.3); letter-spacing: 0.05em; margin-bottom: 1rem; }
         .subtitle { font-size: clamp(0.9rem, 2vw, 1.2rem); color: rgba(255,255,255,0.8); font-weight: 300; animation: pulse 2s ease-in-out infinite; }
         @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, -40%); } to { opacity: 1; transform: translate(-50%, -50%); } }
         @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
-        .hud { position: absolute; top: 20px; left: 20px; display: flex; gap: 20px; opacity: 0; transition: opacity 1s ease; }
+        .menu-container { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 20; pointer-events: auto; }
+        .menu { display: flex; gap: 8px; padding: 12px; background: rgba(0,0,0,0.4); backdrop-filter: blur(15px); border-radius: 50px; border: 1px solid rgba(255,255,255,0.1); }
+        .menu-item { width: 50px; height: 50px; border-radius: 50%; border: 2px solid transparent; background: rgba(255,255,255,0.1); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; transition: all 0.3s ease; position: relative; }
+        .menu-item:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
+        .menu-item.selected { border-color: #fff; background: rgba(255,255,255,0.25); box-shadow: 0 0 20px rgba(255,255,255,0.3); }
+        .menu-item .tooltip { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; white-space: nowrap; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+        .menu-item:hover .tooltip { opacity: 1; }
+        .hud { position: absolute; top: 20px; left: 20px; display: flex; gap: 15px; opacity: 0; transition: opacity 1s ease; }
         .hud.visible { opacity: 1; }
-        .hud-item { background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 12px 20px; border-radius: 30px; color: #fff; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
-        .hud-icon { font-size: 1.2rem; }
-        .inspire-container { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); text-align: center; opacity: 0; transition: opacity 1s ease; }
+        .hud-item { background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 10px 16px; border-radius: 25px; color: #fff; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; }
+        .inspire-container { position: absolute; top: 20px; right: 20px; text-align: center; opacity: 0; transition: opacity 1s ease; }
         .inspire-container.visible { opacity: 1; }
-        .inspire-label { color: rgba(255,255,255,0.7); font-size: 0.8rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.1em; }
-        .inspire-bar { width: 200px; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; overflow: hidden; }
+        .inspire-label { color: rgba(255,255,255,0.7); font-size: 0.75rem; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.1em; }
+        .inspire-bar { width: 120px; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; overflow: hidden; }
         .inspire-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ff9a9e, #fecfef, #a8edea); border-radius: 3px; transition: width 0.5s ease; }
-        .tooltip { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; opacity: 0; transition: opacity 0.5s ease; }
-        .tooltip.visible { opacity: 1; }
+        .current-tool { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); padding: 8px 20px; border-radius: 20px; color: #fff; font-size: 0.9rem; z-index: 20; opacity: 0; transition: opacity 0.5s; }
+        .current-tool.visible { opacity: 1; }
+        .current-tool span { margin-right: 8px; }
     </style>
 </head>
 <body>
@@ -33,22 +40,39 @@
     <div class="overlay">
         <div class="title-container" id="titleContainer">
             <h1 class="title">Spring Garden</h1>
-            <p class="subtitle">Click anywhere to plant</p>
+            <p class="subtitle">Select an item below and click to place</p>
         </div>
         <div class="hud" id="hud">
-            <div class="hud-item"><span class="hud-icon">🌸</span><span id="flowerCount">0</span></div>
-            <div class="hud-item"><span class="hud-icon">🦋</span><span id="butterflyCount">0</span></div>
+            <div class="hud-item"><span>🌸</span><span id="flowerCount">0</span></div>
+            <div class="hud-item"><span>🌳</span><span id="treeCount">0</span></div>
+            <div class="hud-item"><span>🍄</span><span id="mushroomCount">0</span></div>
+            <div class="hud-item"><span>🦋</span><span id="butterflyCount">0</span></div>
+            <div class="hud-item"><span>✨</span><span id="fireflyCount">0</span></div>
         </div>
         <div class="inspire-container" id="inspireContainer">
             <div class="inspire-label">Inspire</div>
             <div class="inspire-bar"><div class="inspire-fill" id="inspireFill"></div></div>
         </div>
-        <div class="tooltip" id="tooltip">Click anywhere to plant flowers!</div>
+        <div class="current-tool" id="currentTool"><span>🌸</span> <span id="toolName">Flower</span></div>
     </div>
+    <div class="menu-container">
+        <div class="menu">
+            <div class="menu-item selected" data-tool="flower"><span>🌸</span><div class="tooltip">Flower</div></div>
+            <div class="menu-item" data-tool="tree"><span>🌳</span><div class="tooltip">Tree</div></div>
+            <div class="menu-item" data-tool="mushroom"><span>🍄</span><div class="tooltip">Mushroom</div></div>
+            <div class="menu-item" data-tool="rock"><span>🪨</span><div class="tooltip">Rock</div></div>
+            <div class="menu-item" data-tool="butterfly"><span>🦋</span><div class="tooltip">Butterfly</div></div>
+            <div class="menu-item" data-tool="firefly"><span>✨</span><div class="tooltip">Firefly</div></div>
+            <div class="menu-item" data-tool="cloud"><span>☁️</span><div class="tooltip">Cloud</div></div>
+            <div class="menu-item" data-tool="bush"><span>🌿</span><div class="tooltip">Bush</div></div>
+        </div>
+    </div>
+
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        let width, height, flowers = [], butterflies = [], petals = [], grassBlades = [], clouds = [], inspire = 0, hasInteracted = false, time = 0;
+        let width, height, flowers = [], trees = [], mushrooms = [], rocks = [], butterflies = [], fireflies = [], customClouds = [], bushes = [], petals = [], grassBlades = [], clouds = [], inspire = 0, hasInteracted = false, time = 0, currentTool = 'flower';
+
         const FLOWER_TYPES = [
             { name: 'tulip', colors: ['#FF6B6B', '#FFE66D', '#FF8E72', '#C44569'], petals: 6, size: 40 },
             { name: 'daisy', colors: ['#FFFFFF', '#FFE4E1', '#FFFACD'], petals: 12, size: 30 },
@@ -59,41 +83,201 @@
             { name: 'hyacinth', colors: ['#3498DB', '#E74C3C', '#9B59B6', '#F1C40F'], petals: 15, size: 35 },
             { name: 'bluebell', colors: ['#5DADE2', '#85C1E9', '#AED6F1'], petals: 6, size: 22 }
         ];
-        const BUTTERFLY_COLORS = [
-            { body: '#2C3E50', wings: '#E74C3C' }, { body: '#34495E', wings: '#3498DB' },
-            { body: '#2C3E50', wings: '#F39C12' }, { body: '#1ABC9C', wings: '#FADBD8' }, { body: '#8E44AD', wings: '#D7BDE2' }
+
+        const TREE_TYPES = [
+            { name: 'oak', trunkColor: '#8B4513', leafColors: ['#228B22', '#2E8B57', '#32CD32'], shape: 'round' },
+            { name: 'cherry', trunkColor: '#654321', leafColors: ['#FFB7C5', '#FFC0CB', '#FF69B4'], shape: 'round' },
+            { name: 'pine', trunkColor: '#8B4513', leafColors: ['#228B22', '#006400'], shape: 'triangle' },
+            { name: 'birch', trunkColor: '#F5F5DC', leafColors: ['#90EE90', '#98FB98'], shape: 'round' }
         ];
+
+        const MUSHROOM_COLORS = [
+            { cap: '#E74C3C', spots: '#FFFFFF', name: 'red' },
+            { cap: '#F39C12', spots: '#FFFFFF', name: 'orange' },
+            { cap: '#8E44AD', spots: '#FFFFFF', name: 'purple' },
+            { cap: '#F5F5DC', spots: '#8B4513', name: 'white' }
+        ];
+
+        const BUTTERFLY_COLORS = [
+            { body: '#2C3E50', wings: '#E74C3C' },
+            { body: '#34495E', wings: '#3498DB' },
+            { body: '#2C3E50', wings: '#F39C12' },
+            { body: '#1ABC9C', wings: '#FADBD8' },
+            { body: '#8E44AD', wings: '#D7BDE2' }
+        ];
+
+        const ROCK_COLORS = ['#696969', '#808080', '#A9A9A9', '#778899'];
+
+        const BUSH_TYPES = [
+            { colors: ['#228B22', '#32CD32', '#90EE90'] },
+            { colors: ['#9B59B6', '#8E44AD'] },
+            { colors: ['#E74C3C', '#C44569'] }
+        ];
+
         function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; initGrass(); initClouds(); }
         function initGrass() { grassBlades = []; for (let i = 0; i < width / 8; i++) grassBlades.push({ x: Math.random() * width, height: 20 + Math.random() * 40, phase: Math.random() * Math.PI * 2, speed: 0.5 + Math.random() }); }
         function initClouds() { clouds = []; for (let i = 0; i < 5; i++) clouds.push({ x: Math.random() * width, y: 50 + Math.random() * 100, size: 50 + Math.random() * 80, speed: 0.1 + Math.random() * 0.2, opacity: 0.3 + Math.random() * 0.3 }); }
         function initPetals() { petals = []; for (let i = 0; i < 80; i++) petals.push(createPetal()); }
         function createPetal() { return { x: Math.random() * width, y: Math.random() * height, size: 3 + Math.random() * 5, rotation: Math.random() * Math.PI * 2, rotationSpeed: (Math.random() - 0.5) * 0.05, fallSpeed: 0.3 + Math.random() * 0.5, swayPhase: Math.random() * Math.PI * 2, swayAmount: 0.5 + Math.random(), color: ['#FFB7C5', '#FFC0CB', '#FFE4E1', '#FFF0F5'][Math.floor(Math.random() * 4)] }; }
+
         class Flower {
             constructor(x, groundY) { this.x = x; this.groundY = groundY; this.type = FLOWER_TYPES[Math.floor(Math.random() * FLOWER_TYPES.length)]; this.color = this.type.colors[Math.floor(Math.random() * this.type.colors.length)]; this.growth = 0; this.swayPhase = Math.random() * Math.PI * 2; this.swayAmount = 2 + Math.random() * 3; this.stemHeight = 60 + Math.random() * 80; this.bloomDelay = 0.5 + Math.random() * 0.5; this.bloomProgress = 0; }
             update(dt) { if (this.growth < 1) { this.growth = Math.min(1, this.growth + dt * 0.4); if (this.growth > this.bloomDelay) this.bloomProgress = Math.min(1, (this.growth - this.bloomDelay) / (1 - this.bloomDelay)); } this.swayPhase += dt * (0.5 + Math.random() * 0.5); }
             draw(ctx) { if (this.growth <= 0) return; const sway = Math.sin(this.swayPhase) * this.swayAmount; const currentHeight = this.stemHeight * this.growth; const stemX = this.x + sway; const stemEndY = this.groundY - currentHeight; ctx.strokeStyle = '#228B22'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(this.x, this.groundY); ctx.quadraticCurveTo(stemX + sway * 0.5, this.groundY - currentHeight * 0.5, stemX, stemEndY); ctx.stroke(); if (this.growth > this.bloomDelay && this.bloomProgress > 0) { ctx.save(); ctx.translate(stemX, stemEndY); const size = this.type.size * this.growth; const bloomSize = size * this.bloomProgress; if (this.type.name === 'sunflower') { ctx.fillStyle = '#8B4513'; ctx.beginPath(); ctx.arc(0, 0, bloomSize * 0.3, 0, Math.PI * 2); ctx.fill(); for (let i = 0; i < this.type.petals; i++) { ctx.save(); ctx.rotate((i / this.type.petals) * Math.PI * 2); ctx.fillStyle = this.color; ctx.beginPath(); ctx.ellipse(0, -bloomSize * 0.5, bloomSize * 0.15, bloomSize * 0.4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); } } else if (this.type.name === 'lavender') { for (let i = 0; i < 5; i++) { ctx.fillStyle = this.color; ctx.globalAlpha = 1 - i * 0.15; ctx.beginPath(); ctx.arc(0, -i * bloomSize * 0.2, bloomSize * 0.15, 0, Math.PI * 2); ctx.fill(); } ctx.globalAlpha = 1; } else { for (let i = 0; i < this.type.petals; i++) { ctx.save(); ctx.rotate((i / this.type.petals) * Math.PI * 2); ctx.fillStyle = this.color; ctx.globalAlpha = 0.9; ctx.beginPath(); ctx.ellipse(0, -bloomSize * 0.4, bloomSize * 0.2, bloomSize * 0.35, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); } ctx.fillStyle = '#FFD700'; ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(0, 0, bloomSize * 0.15, 0, Math.PI * 2); ctx.fill(); } ctx.restore(); } }
         }
+
+        class Tree {
+            constructor(x, groundY) { this.x = x; this.groundY = groundY; this.type = TREE_TYPES[Math.floor(Math.random() * TREE_TYPES.length)]; this.color = this.type.leafColors[Math.floor(Math.random() * this.type.leafColors.length)]; this.growth = 0; this.swayPhase = Math.random() * Math.PI * 2; this.trunkHeight = 80 + Math.random() * 60; this.trunkWidth = 15 + Math.random() * 10; this.canopySize = 60 + Math.random() * 40; }
+            update(dt) { this.growth = Math.min(1, this.growth + dt * 0.3); this.swayPhase += dt * 0.3; }
+            draw(ctx) { if (this.growth <= 0) return; const sway = Math.sin(this.swayPhase) * 3 * this.growth; const trunkH = this.trunkHeight * this.growth; ctx.fillStyle = this.type.trunkColor; ctx.fillRect(this.x - this.trunkWidth / 2, this.groundY - trunkH, this.trunkWidth, trunkH); if (this.growth > 0.5) { const leafGrowth = (this.growth - 0.5) * 2; ctx.save(); ctx.translate(this.x + sway, this.groundY - trunkH); if (this.type.shape === 'triangle') { ctx.fillStyle = this.color; ctx.beginPath(); ctx.moveTo(0, -this.canopySize * leafGrowth); ctx.lineTo(-this.canopySize * 0.7 * leafGrowth, 0); ctx.lineTo(this.canopySize * 0.7 * leafGrowth, 0); ctx.fill(); ctx.beginPath(); ctx.moveTo(0, -this.canopySize * 0.6 * leafGrowth); ctx.lineTo(-this.canopySize * 0.5 * leafGrowth, this.canopySize * 0.3); ctx.lineTo(this.canopySize * 0.5 * leafGrowth, this.canopySize * 0.3); ctx.fill(); } else { ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(0, -this.canopySize * 0.4 * leafGrowth, this.canopySize * 0.6 * leafGrowth, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(-this.canopySize * 0.3 * leafGrowth, -this.canopySize * 0.2 * leafGrowth, this.canopySize * 0.4 * leafGrowth, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(this.canopySize * 0.3 * leafGrowth, -this.canopySize * 0.2 * leafGrowth, this.canopySize * 0.4 * leafGrowth, 0, Math.PI * 2); ctx.fill(); } ctx.restore(); } }
+        }
+
+        class Mushroom {
+            constructor(x, groundY) { this.x = x; this.groundY = groundY; this.type = MUSHROOM_COLORS[Math.floor(Math.random() * MUSHROOM_COLORS.length)]; this.growth = 0; this.scale = 0.5 + Math.random() * 0.5; this.stemHeight = 15 * this.scale + Math.random() * 10; this.capSize = 25 * this.scale; this.spots = []; for (let i = 0; i < 4; i++) this.spots.push({ x: (Math.random() - 0.5) * this.capSize, y: (Math.random() - 0.5) * this.capSize * 0.4, r: 2 + Math.random() * 3 }); }
+            update(dt) { this.growth = Math.min(1, this.growth + dt * 0.5); }
+            draw(ctx) { if (this.growth <= 0) return; const s = this.scale * this.growth; ctx.fillStyle = '#F5F5DC'; ctx.fillRect(this.x - 4 * s, this.groundY - this.stemHeight * s, 8 * s, this.stemHeight * s); ctx.fillStyle = this.type.cap; ctx.beginPath(); ctx.ellipse(this.x, this.groundY - this.stemHeight * s, this.capSize * s, this.capSize * 0.6 * s, 0, Math.PI, 0); ctx.fill(); ctx.fillStyle = this.type.spots; for (const spot of this.spots) { ctx.beginPath(); ctx.arc(this.x + spot.x * s, this.groundY - this.stemHeight * s + spot.y * s, spot.r * s, 0, Math.PI * 2); ctx.fill(); } }
+        }
+
+        class Rock {
+            constructor(x, groundY) { this.x = x; this.groundY = groundY; this.color = ROCK_COLORS[Math.floor(Math.random() * ROCK_COLORS.length)]; this.size = 15 + Math.random() * 25; this.growth = 0; this.rotation = Math.random() * 0.5 - 0.25; }
+            update(dt) { this.growth = Math.min(1, this.growth + dt * 1); }
+            draw(ctx) { if (this.growth <= 0) return; const s = this.size * this.growth; ctx.save(); ctx.translate(this.x, this.groundY); ctx.rotate(this.rotation); ctx.fillStyle = this.color; ctx.beginPath(); ctx.moveTo(-s, 0); ctx.lineTo(-s * 0.7, -s * 0.6); ctx.lineTo(s * 0.2, -s * 0.8); ctx.lineTo(s * 0.8, -s * 0.4); ctx.lineTo(s * 0.6, 0); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.moveTo(-s * 0.5, -s * 0.3); ctx.lineTo(-s * 0.2, -s * 0.5); ctx.lineTo(s * 0.1, -s * 0.4); ctx.lineTo(-s * 0.1, -s * 0.2); ctx.fill(); ctx.restore(); }
+        }
+
+        class Bush {
+            constructor(x, groundY) { this.x = x; this.groundY = groundY; this.type = BUSH_TYPES[Math.floor(Math.random() * BUSH_TYPES.length)]; this.color = this.type.colors[Math.floor(Math.random() * this.type.colors.length)]; this.growth = 0; this.width = 50 + Math.random() * 40; this.height = 30 + Math.random() * 20; this.swayPhase = Math.random() * Math.PI * 2; }
+            update(dt) { this.growth = Math.min(1, this.growth + dt * 0.4); this.swayPhase += dt * 0.5; }
+            draw(ctx) { if (this.growth <= 0) return; const w = this.width * this.growth; const h = this.height * this.growth; const sway = Math.sin(this.swayPhase) * 2; ctx.fillStyle = this.color; ctx.beginPath(); ctx.ellipse(this.x + sway, this.groundY - h * 0.4, w * 0.5, h * 0.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.ellipse(this.x - w * 0.25 + sway, this.groundY - h * 0.3, w * 0.35, h * 0.4, 0, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.ellipse(this.x + w * 0.25 + sway, this.groundY - h * 0.3, w * 0.35, h * 0.4, 0, 0, Math.PI * 2); ctx.fill(); }
+        }
+
         class Butterfly {
-            constructor() { this.reset(); this.targetX = this.x; this.targetY = this.y; this.wingPhase = Math.random() * Math.PI * 2; this.colorScheme = BUTTERFLY_COLORS[Math.floor(Math.random() * BUTTERFLY_COLORS.length)]; }
-            reset() { this.x = Math.random() * width; this.y = height * 0.3 + Math.random() * height * 0.4; this.targetX = this.x; this.targetY = this.y; }
-            update(dt) { this.wingPhase += dt * 15; const nearest = this.findNearestFlower(); if (nearest && Math.random() < 0.02) { this.targetX = nearest.x + (Math.random() - 0.5) * 50; this.targetY = nearest.groundY - nearest.stemHeight * 0.7; } if (Math.random() < 0.01) { this.targetX = Math.random() * width; this.targetY = height * 0.2 + Math.random() * height * 0.5; } this.x += (this.targetX - this.x) * dt * 1.5; this.y += (this.targetY - this.y) * dt * 1.5; if (this.y > height * 0.85) { this.y = height * 0.85; this.targetY = height * 0.3 + Math.random() * height * 0.3; } }
+            constructor(x, y) { this.x = x || Math.random() * width; this.y = y || height * 0.3 + Math.random() * height * 0.4; this.targetX = this.x; this.targetY = this.y; this.wingPhase = Math.random() * Math.PI * 2; this.colorScheme = BUTTERFLY_COLORS[Math.floor(Math.random() * BUTTERFLY_COLORS.length)]; this.speed = 1 + Math.random() * 1; }
+            update(dt) { this.wingPhase += dt * 15; const nearest = this.findNearestFlower(); if (nearest && Math.random() < 0.03) { this.targetX = nearest.x + (Math.random() - 0.5) * 50; this.targetY = nearest.groundY - nearest.stemHeight * 0.7; } else if (Math.random() < 0.02) { this.targetX = Math.random() * width; this.targetY = height * 0.2 + Math.random() * height * 0.5; } this.x += (this.targetX - this.x) * dt * this.speed; this.y += (this.targetY - this.y) * dt * this.speed; if (this.y > height * 0.85) { this.y = height * 0.85; this.targetY = height * 0.3 + Math.random() * height * 0.3; } }
             findNearestFlower() { let nearest = null, nearestDist = Infinity; for (const f of flowers) { if (f.growth < 0.8) continue; const dist = Math.hypot(f.x - this.x, f.groundY - f.stemHeight * 0.7 - this.y); if (dist < nearestDist && dist < 300) { nearest = f; nearestDist = dist; } } return nearest; }
             draw(ctx) { const wing = Math.sin(this.wingPhase) * 0.5 + 0.5; const size = 15; ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = this.colorScheme.wings; ctx.beginPath(); ctx.ellipse(-size * wing, 0, size * (1 - wing * 0.3), size * 0.7, -0.3, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.ellipse(size * wing, 0, size * (1 - wing * 0.3), size * 0.7, 0.3, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = this.colorScheme.body; ctx.fillRect(-2, -size * 0.6, 4, size * 1.2); ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(-2, -size * 0.6, 2, 0, Math.PI * 2); ctx.arc(2, -size * 0.6, 2, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
         }
-        function drawSky() { const cycle = (time % 120) / 120; let topColor, bottomColor, sunColor; if (cycle < 0.25) { const t = cycle / 0.25; topColor = lerpColor('#1a1a2e', '#FF6B6B', t); bottomColor = lerpColor('#16213e', '#FFE66D', t); } else if (cycle < 0.5) { const t = (cycle - 0.25) / 0.25; topColor = lerpColor('#FF6B6B', '#87CEEB', t); bottomColor = lerpColor('#FFE66D', '#E0F6FF', t); } else if (cycle < 0.75) { const t = (cycle - 0.5) / 0.25; topColor = lerpColor('#87CEEB', '#FF8C69', t); bottomColor = lerpColor('#E0F6FF', '#FFB347', t); } else { const t = (cycle - 0.75) / 0.25; topColor = lerpColor('#FF8C69', '#1a1a2e', t); bottomColor = lerpColor('#FFB347', '#16213e', t); } const gradient = ctx.createLinearGradient(0, 0, 0, height); gradient.addColorStop(0, topColor); gradient.addColorStop(1, bottomColor); ctx.fillStyle = gradient; ctx.fillRect(0, 0, width, height); const sunAngle = cycle * Math.PI; const sunX = width * 0.5 + Math.cos(sunAngle - Math.PI / 2) * width * 0.4; const sunY = height * 0.7 - Math.sin(sunAngle - Math.PI / 2) * height * 0.5; const sunGrad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 80); sunGrad.addColorStop(0, 'rgba(255,255,200,0.8)'); sunGrad.addColorStop(0.3, 'rgba(255,255,200,0.3)'); sunGrad.addColorStop(1, 'transparent'); ctx.fillStyle = sunGrad; ctx.fillRect(0, 0, width, height); ctx.fillStyle = '#FFEECC'; ctx.beginPath(); ctx.arc(sunX, sunY, 30, 0, Math.PI * 2); ctx.fill(); }
+
+        class Firefly {
+            constructor(x, y) { this.x = x || Math.random() * width; this.y = y || height * 0.3 + Math.random() * height * 0.5; this.phase = Math.random() * Math.PI * 2; this.glowPhase = Math.random() * Math.PI * 2; this.size = 3 + Math.random() * 2; this.driftSpeed = 0.2 + Math.random() * 0.3; }
+            update(dt) { this.phase += dt * this.driftSpeed; this.glowPhase += dt * 3; this.x += Math.sin(this.phase) * 0.5; this.y += Math.cos(this.phase * 0.7) * 0.3; if (this.x < 0) this.x = width; if (this.x > width) this.x = 0; if (this.y < height * 0.2) this.y = height * 0.2; if (this.y > height * 0.8) this.y = height * 0.8; }
+            draw(ctx) { const cycle = (time % 120) / 120; const isNight = cycle > 0.75 || cycle < 0.25; const glow = (Math.sin(this.glowPhase) + 1) * 0.5; if (isNight || fireflies.length > 0) { const alpha = isNight ? 0.5 + glow * 0.5 : glow * 0.3; ctx.save(); ctx.globalAlpha = alpha; const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 4); grad.addColorStop(0, '#FFFF00'); grad.addColorStop(0.3, 'rgba(255,255,0,0.5)'); grad.addColorStop(1, 'transparent'); ctx.fillStyle = grad; ctx.fillRect(this.x - this.size * 4, this.y - this.size * 4, this.size * 8, this.size * 8); ctx.fillStyle = '#FFFF00'; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); ctx.restore(); } }
+        }
+
+        class CustomCloud {
+            constructor(x, y) { this.x = x || Math.random() * width; this.y = y || 50 + Math.random() * 150; this.size = 40 + Math.random() * 60; this.speed = 0.2 + Math.random() * 0.3; this.opacity = 0.6 + Math.random() * 0.3; }
+            update(dt) { this.x += this.speed; if (this.x > width + this.size) this.x = -this.size; }
+            draw(ctx) { ctx.fillStyle = `rgba(255,255,255,${this.opacity})`; ctx.beginPath(); ctx.arc(this.x, this.y, this.size * 0.5, 0, Math.PI * 2); ctx.arc(this.x + this.size * 0.4, this.y - this.size * 0.1, this.size * 0.4, 0, Math.PI * 2); ctx.arc(this.x + this.size * 0.8, this.y, this.size * 0.45, 0, Math.PI * 2); ctx.arc(this.x + this.size * 0.4, this.y + this.size * 0.2, this.size * 0.35, 0, Math.PI * 2); ctx.fill(); }
+        }
+
+        function drawSky() { const cycle = (time % 120) / 120; let topColor, bottomColor; if (cycle < 0.25) { const t = cycle / 0.25; topColor = lerpColor('#1a1a2e', '#FF6B6B', t); bottomColor = lerpColor('#16213e', '#FFE66D', t); } else if (cycle < 0.5) { const t = (cycle - 0.25) / 0.25; topColor = lerpColor('#FF6B6B', '#87CEEB', t); bottomColor = lerpColor('#FFE66D', '#E0F6FF', t); } else if (cycle < 0.75) { const t = (cycle - 0.5) / 0.25; topColor = lerpColor('#87CEEB', '#FF8C69', t); bottomColor = lerpColor('#E0F6FF', '#FFB347', t); } else { const t = (cycle - 0.75) / 0.25; topColor = lerpColor('#FF8C69', '#1a1a2e', t); bottomColor = lerpColor('#FFB347', '#16213e', t); } const gradient = ctx.createLinearGradient(0, 0, 0, height); gradient.addColorStop(0, topColor); gradient.addColorStop(1, bottomColor); ctx.fillStyle = gradient; ctx.fillRect(0, 0, width, height); const sunAngle = cycle * Math.PI; const sunX = width * 0.5 + Math.cos(sunAngle - Math.PI / 2) * width * 0.4; const sunY = height * 0.7 - Math.sin(sunAngle - Math.PI / 2) * height * 0.5; const sunGrad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 80); sunGrad.addColorStop(0, 'rgba(255,255,200,0.8)'); sunGrad.addColorStop(0.3, 'rgba(255,255,200,0.3)'); sunGrad.addColorStop(1, 'transparent'); ctx.fillStyle = sunGrad; ctx.fillRect(0, 0, width, height); ctx.fillStyle = '#FFEECC'; ctx.beginPath(); ctx.arc(sunX, sunY, 30, 0, Math.PI * 2); ctx.fill(); }
         function lerpColor(a, b, t) { const ah = parseInt(a.replace('#', ''), 16); const bh = parseInt(b.replace('#', ''), 16); const ar = (ah >> 16) & 0xff, ag = (ah >> 8) & 0xff, ab = ah & 0xff; const br = (bh >> 16) & 0xff, bg = (bh >> 8) & 0xff, bb = bh & 0xff; return '#' + ((1 << 24) + (Math.round(ar + (br - ar) * t) << 16) + (Math.round(ag + (bg - ag) * t) << 8) + Math.round(ab + (bb - ab) * t)).toString(16).slice(1); }
         function drawClouds() { for (const c of clouds) { c.x += c.speed; if (c.x > width + c.size) c.x = -c.size; ctx.fillStyle = `rgba(255,255,255,${c.opacity})`; ctx.beginPath(); ctx.arc(c.x, c.y, c.size * 0.5, 0, Math.PI * 2); ctx.arc(c.x + c.size * 0.4, c.y - c.size * 0.1, c.size * 0.4, 0, Math.PI * 2); ctx.arc(c.x + c.size * 0.8, c.y, c.size * 0.45, 0, Math.PI * 2); ctx.arc(c.x + c.size * 0.4, c.y + c.size * 0.2, c.size * 0.35, 0, Math.PI * 2); ctx.fill(); } }
         function drawGround() { const groundY = height * 0.78; const gGrad = ctx.createLinearGradient(0, groundY, 0, height); gGrad.addColorStop(0, '#4a7c23'); gGrad.addColorStop(0.3, '#3d6b1c'); gGrad.addColorStop(1, '#2d5016'); ctx.fillStyle = gGrad; ctx.fillRect(0, groundY, width, height - groundY); for (const blade of grassBlades) { const sway = Math.sin(blade.phase + time * blade.speed) * 5; ctx.strokeStyle = `hsl(${100 + Math.random() * 20},60%,${35 + Math.random() * 15}%)`; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(blade.x, groundY); ctx.quadraticCurveTo(blade.x + sway * 0.5, groundY - blade.height * 0.5, blade.x + sway, groundY - blade.height); ctx.stroke(); } }
         function drawPetals() { for (const p of petals) { p.y += p.fallSpeed; p.x += Math.sin(p.swayPhase + time) * p.swayAmount * 0.1; p.rotation += p.rotationSpeed; if (p.y > height + 10) { p.y = -10; p.x = Math.random() * width; } ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rotation); ctx.fillStyle = p.color; ctx.globalAlpha = 0.8; ctx.beginPath(); ctx.ellipse(0, 0, p.size, p.size * 0.6, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); p.swayPhase += 0.02; } }
-        function plantFlower(x, y) { const groundY = height * 0.78; if (y > groundY - 20) y = groundY - 20; flowers.push(new Flower(x, groundY)); if (!hasInteracted) { hasInteracted = true; document.getElementById('titleContainer').style.opacity = '0'; document.getElementById('hud').classList.add('visible'); document.getElementById('inspireContainer').classList.add('visible'); document.getElementById('tooltip').classList.remove('visible'); } inspire = Math.min(100, inspire + 5); document.getElementById('flowerCount').textContent = flowers.length; document.getElementById('butterflyCount').textContent = butterflies.length; document.getElementById('inspireFill').style.width = inspire + '%'; if (butterflies.length < 12 && Math.random() < 0.3) butterflies.push(new Butterfly()); }
+
+        function placeItem(x, y) {
+            const groundY = height * 0.78;
+            if (!hasInteracted) {
+                hasInteracted = true;
+                document.getElementById('titleContainer').style.opacity = '0';
+                document.getElementById('hud').classList.add('visible');
+                document.getElementById('inspireContainer').classList.add('visible');
+                document.getElementById('currentTool').classList.add('visible');
+            }
+
+            switch (currentTool) {
+                case 'flower':
+                    if (y > groundY - 20) y = groundY - 20;
+                    flowers.push(new Flower(x, groundY));
+                    if (butterflies.length < 15 && Math.random() < 0.25) butterflies.push(new Butterfly());
+                    break;
+                case 'tree':
+                    if (y > groundY - 20) y = groundY - 20;
+                    trees.push(new Tree(x, groundY));
+                    break;
+                case 'mushroom':
+                    if (y > groundY - 10) y = groundY - 10;
+                    mushrooms.push(new Mushroom(x, groundY));
+                    break;
+                case 'rock':
+                    if (y > groundY - 10) y = groundY - 10;
+                    rocks.push(new Rock(x, groundY));
+                    break;
+                case 'butterfly':
+                    butterflies.push(new Butterfly(x, y));
+                    break;
+                case 'firefly':
+                    fireflies.push(new Firefly(x, y));
+                    break;
+                case 'cloud':
+                    customClouds.push(new CustomCloud(x, y));
+                    break;
+                case 'bush':
+                    if (y > groundY - 15) y = groundY - 15;
+                    bushes.push(new Bush(x, groundY));
+                    break;
+            }
+
+            inspire = Math.min(100, inspire + 3);
+            updateHUD();
+        }
+
+        function updateHUD() {
+            document.getElementById('flowerCount').textContent = flowers.length;
+            document.getElementById('treeCount').textContent = trees.length;
+            document.getElementById('mushroomCount').textContent = mushrooms.length;
+            document.getElementById('butterflyCount').textContent = butterflies.length;
+            document.getElementById('fireflyCount').textContent = fireflies.length;
+            document.getElementById('inspireFill').style.width = inspire + '%';
+        }
+
+        function selectTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('selected'));
+            document.querySelector(`[data-tool="${tool}"]`).classList.add('selected');
+            const names = { flower: 'Flower', tree: 'Tree', mushroom: 'Mushroom', rock: 'Rock', butterfly: 'Butterfly', firefly: 'Firefly', cloud: 'Cloud', bush: 'Bush' };
+            document.getElementById('toolName').textContent = names[tool];
+            document.getElementById('currentTool').querySelector('span:first-child').textContent = document.querySelector(`[data-tool="${tool}"] span`).textContent;
+        }
+
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', () => selectTool(item.dataset.tool));
+        });
+
         let lastTime = 0;
-        function animate(currentTime) { const dt = Math.min((currentTime - lastTime) / 1000, 0.1); lastTime = currentTime; time += dt; ctx.clearRect(0, 0, width, height); drawSky(); drawClouds(); drawGround(); for (const f of flowers) { f.update(dt); f.draw(ctx); } drawPetals(); for (const b of butterflies) { b.update(dt); b.draw(ctx); } requestAnimationFrame(animate); }
-        canvas.addEventListener('click', e => plantFlower(e.clientX, e.clientY));
-        canvas.addEventListener('touchstart', e => { e.preventDefault(); plantFlower(e.touches[0].clientX, e.touches[0].clientY); });
+        function animate(currentTime) {
+            const dt = Math.min((currentTime - lastTime) / 1000, 0.1);
+            lastTime = currentTime;
+            time += dt;
+
+            ctx.clearRect(0, 0, width, height);
+            drawSky();
+            drawClouds();
+            for (const c of customClouds) { c.update(dt); c.draw(ctx); }
+            drawGround();
+
+            for (const b of bushes) { b.update(dt); b.draw(ctx); }
+            for (const r of rocks) { r.update(dt); r.draw(ctx); }
+            for (const t of trees) { t.update(dt); t.draw(ctx); }
+            for (const f of flowers) { f.update(dt); f.draw(ctx); }
+            for (const m of mushrooms) { m.update(dt); m.draw(ctx); }
+
+            drawPetals();
+
+            for (const b of butterflies) { b.update(dt); b.draw(ctx); }
+            for (const f of fireflies) { f.update(dt); f.draw(ctx); }
+
+            requestAnimationFrame(animate);
+        }
+
+        canvas.addEventListener('click', e => placeItem(e.clientX, e.clientY));
+        canvas.addEventListener('touchstart', e => { e.preventDefault(); placeItem(e.touches[0].clientX, e.touches[0].clientY); });
         window.addEventListener('resize', resize);
-        resize(); initPetals();
-        for (let i = 0; i < 3; i++) setTimeout(() => plantFlower(width * 0.3 + Math.random() * width * 0.4, height * 0.6), i * 500);
-        setTimeout(() => { if (!hasInteracted) document.getElementById('tooltip').classList.add('visible'); }, 3000);
+        resize();
+        initPetals();
+
+        for (let i = 0; i < 3; i++) setTimeout(() => placeItem(width * 0.3 + Math.random() * width * 0.4, height * 0.5), i * 500);
+
         requestAnimationFrame(animate);
     </script>
 </body>

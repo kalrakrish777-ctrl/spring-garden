@@ -8,40 +8,49 @@ An immersive, interactive web experience where visitors cultivate their own proc
 
 ## Features
 
-### Interactive Garden
-- **Click anywhere to plant flowers** - 8 unique procedural flower species (tulips, daisies, sakura, sunflowers, lavender, crocus, hyacinth, bluebells)
-- **Growth animations** - Flowers emerge from the ground and bloom over 2 seconds
-- **Swaying motion** - All flowers gently sway in the breeze using sine-wave physics
+### 8 Placeable Items
+- **🌸 Flowers** - 8 species (tulips, daisies, sakura, sunflowers, lavender, crocus, hyacinth, bluebells)
+- **🌳 Trees** - 4 types (oak, cherry, pine, birch) with unique canopy shapes
+- **🍄 Mushrooms** - Colorful spotted mushrooms in 4 varieties
+- **🪨 Rocks** - Procedurally generated stone formations
+- **🦋 Butterflies** - Place anywhere, they'll be drawn to flowers
+- **✨ Fireflies** - Magical glowing insects (more visible at night)
+- **☁️ Clouds** - Add custom clouds to the sky
+- **🌿 Bushes** - Decorative bushes in various colors
 
 ### Living Ecosystem
-- **Butterfly attraction system** - Butterflies are naturally drawn to newly planted flowers
-- **Sakura petal particles** - 80 falling petals drift across the screen with rotation and wind physics
 - **Dynamic sky** - Full day/night cycle (dawn → day → dusk → night) over 2 minutes
+- **Sakura petal particles** - 80 falling petals drift across the screen
+- **Butterfly AI** - Butterflies are naturally attracted to flowers
+- **Firefly glow** - Fireflies glow brighter at night
 
 ### Visual Polish
-- **Procedural generation** - Every flower is unique with randomized colors, sizes, and growth patterns
-- **Atmospheric depth** - Layered grass, clouds, and gradient sky create depth
+- **Procedural generation** - Every item is unique with randomized properties
+- **Growth animations** - Plants emerge and bloom over time
+- **Swaying motion** - Trees, flowers, and bushes sway in the breeze
+- **Atmospheric depth** - Layered elements create depth
 - **Responsive design** - Full-screen canvas that adapts to any screen size
 - **Touch support** - Works on mobile devices
 
 ### Light Gamification
-- **Flower counter** - Track how many flowers you've planted
-- **Butterfly counter** - Watch butterflies gather in your garden
-- **Inspire meter** - Fills as you interact, rewarding cultivation
-
-## Technical Details
-
-- **Stack:** Vanilla JavaScript + HTML5 Canvas (zero dependencies)
-- **Architecture:** Object-oriented with Flower, Butterfly, and Particle classes
-- **Performance:** 60fps animation loop with delta-time physics
-- **File size:** Single ~25KB HTML file
+- **Item counters** - Track flowers, trees, mushrooms, butterflies, and fireflies
+- **Inspire meter** - Fills as you interact with the garden
+- **Menu selection** - Choose what to place with the bottom toolbar
 
 ## Controls
 
 | Input | Action |
 |-------|--------|
-| Click/Tap | Plant a random flower |
-| Wait | Watch butterflies naturally gather |
+| Select from menu | Choose item type to place |
+| Click/Tap canvas | Place selected item |
+| Wait | Watch butterflies gather, fireflies glow |
+
+## Technical Details
+
+- **Stack:** Vanilla JavaScript + HTML5 Canvas (zero dependencies)
+- **Architecture:** Object-oriented classes for each item type
+- **Performance:** 60fps animation loop with delta-time physics
+- **File size:** Single ~30KB HTML file
 
 ## Development
 
